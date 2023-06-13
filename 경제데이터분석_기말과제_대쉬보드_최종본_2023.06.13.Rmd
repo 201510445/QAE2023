@@ -1,0 +1,224 @@
+---
+title: "국내ETF 한눈에 보기"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(rvest)
+library(dplyr)
+library(stringr)
+library(writexl)
+library(openxlsx)
+library(httr)
+library(jsonlite)
+library(kableExtra)
+
+#데이터 호출
+URL <- "https://finance.naver.com/api/sise/etfItemList.nhn?etfType=0&targetColumn=market_sum&sortOrder=desc"
+res <- GET(URL, encoding = 'euc-kr')
+
+doc <- content(res)
+
+# ETF 데이터 테이블 제작
+etf <- fromJSON(doc) %>% .[[2]] %>% .$etfItemList
+
+#Brand 구분
+etf[,"Brand"] <- str_split(etf$itemname," ", simplify = TRUE)[,1]
+
+#Brand 구분
+etf[,"itemcode"] <- str_c("https://finance.naver.com/item/main.naver?code=",etf$itemcode)
+
+#Brand
+brand <- etf %>% distinct(Brand) %>% as.list() %>% unlist()
+
+#필요한 데이터만 선택
+etf_fin <- etf %>% dplyr::select(c(Brand, itemcode, itemname, nowVal, changeRate)) %>% rename("브랜드" = "Brand", "itemcode" = "itemcode", "종목명" = "itemname", "가격" = "nowVal", "등락률" = "changeRate")
+
+```
+
+데일리 ETF 수익률 TOP
+=======================================================================
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### ALL TOP10
+
+```{r}
+#ETF 시장 전체 일일수익률 TOP10 ETF
+ETF_ALL <- etf_fin %>% arrange(desc(등락률)) %>% head(10) %>% mutate(종목명= cell_spec(종목명, "html", link = itemcode, color="#062872")) %>% select(종목명, 가격, 등락률)
+
+ETF_ALL %>% kable(escape=FALSE) %>%  kable_styling("striped", full_width = T, position = "center", font_size = 10)
+```
+
+
+Column {data-width=325}
+-----------------------------------------------------------------------
+
+### 삼성자산운용
+
+```{r}
+# 삼성
+KODEX <- etf_fin %>% filter(브랜드 == "KODEX") %>% arrange(desc(등락률)) %>% head(5) %>% mutate(종목명= cell_spec(종목명, "html", link = itemcode, color="#062872")) %>% select(종목명, 가격, 등락률)
+
+KODEX %>% kable(escape=FALSE) %>% kable_styling("striped", full_width = T, position = "center", font_size = 10)
+```
+
+### 미래에셋자산운용
+
+```{r}
+# 미래
+TIGER <- etf_fin %>% filter(브랜드 == "TIGER") %>% arrange(desc(등락률)) %>% head(5) %>% mutate(종목명= cell_spec(종목명, "html", link = itemcode, color="#062872")) %>% select(종목명, 가격, 등락률)
+
+TIGER %>% kable(escape=FALSE) %>% kable_styling("striped", full_width = T, position = "center", font_size = 10)
+```
+
+### KB자산운용
+
+```{r}
+# KB
+KBSTAR <- etf_fin %>% filter(브랜드 == "KBSTAR") %>% arrange(desc(등락률)) %>% head(5) %>% mutate(종목명= cell_spec(종목명, "html", link = itemcode, color="#062872")) %>% select(종목명, 가격, 등락률)
+
+KBSTAR %>% kable(escape=FALSE) %>% kable_styling("striped", full_width = T, position = "center", font_size = 10)
+```
+### 한국투자신탁운용
+
+```{r}
+# 한투
+ACE <- etf_fin %>% filter(브랜드 == "ACE") %>% arrange(desc(등락률)) %>% head(5) %>% mutate(종목명= cell_spec(종목명, "html", link = itemcode, color="#062872")) %>% select(종목명, 가격, 등락률)
+
+ACE %>% kable(escape=FALSE) %>% kable_styling("striped", full_width = T, position = "center", font_size = 10)
+```
+
+Column {data-width=325}
+-----------------------------------------------------------------------
+### 한화자산운용
+
+```{r}
+# 한화
+ARIRANG <- etf_fin %>% filter(브랜드 == "ARIRANG") %>% arrange(desc(등락률)) %>% head(5) %>% mutate(종목명= cell_spec(종목명, "html", link = itemcode, color="#062872")) %>% select(종목명, 가격, 등락률)
+
+ARIRANG %>% kable(escape=FALSE) %>% kable_styling("striped", full_width = T, position = "center", font_size = 10)
+```
+
+### 키움투자자산운용
+
+```{r}
+# 키움 (히어로즈는 키움의 액티브 ETF 브랜드드)
+KOSEF <- etf_fin %>% filter(브랜드 == "KOSEF") %>% arrange(desc(등락률)) %>% head(5) %>% mutate(종목명= cell_spec(종목명, "html", link = itemcode, color="#062872")) %>% select(종목명, 가격, 등락률)
+
+KOSEF %>% kable(escape=FALSE) %>% kable_styling("striped", full_width = T, position = "center", font_size = 10)
+```
+
+### NH-Amundi자산운용
+
+```{r}
+# NH-Amundi
+HANARO <- etf_fin %>% filter(브랜드 == "HANARO") %>% arrange(desc(등락률)) %>% head(5) %>% mutate(종목명= cell_spec(종목명, "html", link = itemcode, color="#062872")) %>% select(종목명, 가격, 등락률)
+
+HANARO %>% kable(escape=FALSE) %>% kable_styling("striped", full_width = T, position = "center", font_size = 10)
+```
+### 신한자산운용
+
+```{r}
+# 신한
+SOL <- etf_fin %>% filter(브랜드 == "SOL") %>% arrange(desc(등락률)) %>% head(5) %>% mutate(종목명= cell_spec(종목명, "html", link = itemcode, color="#062872")) %>% select(종목명, 가격, 등락률)
+
+SOL %>% kable(escape=FALSE) %>% kable_styling("striped", full_width = T, position = "center", font_size = 10)
+```
+
+
+데일리 ETF 수익률 BOTTOM
+=======================================================================
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### ALL BOTTOM10
+
+```{r}
+#ETF 시장 전체 일일수익률 TOP10 ETF
+ETF_ALL <- etf_fin %>% arrange(등락률) %>% head(10) %>% mutate(종목명= cell_spec(종목명, "html", link = itemcode, color="#062872")) %>% select(종목명, 가격, 등락률)
+
+ETF_ALL %>% kable(escape=FALSE) %>%  kable_styling("striped", full_width = T, position = "center", font_size = 10)
+```
+
+
+Column {data-width=325}
+-----------------------------------------------------------------------
+
+### 삼성자산운용
+
+```{r}
+# 삼성
+KODEX <- etf_fin %>% filter(브랜드 == "KODEX") %>% arrange(등락률) %>% head(5) %>% mutate(종목명= cell_spec(종목명, "html", link = itemcode, color="#062872")) %>% select(종목명, 가격, 등락률)
+
+KODEX %>% kable(escape=FALSE) %>% kable_styling("striped", full_width = T, position = "center", font_size = 10)
+```
+
+### 미래에셋자산운용
+
+```{r}
+# 미래
+TIGER <- etf_fin %>% filter(브랜드 == "TIGER") %>% arrange(등락률) %>% head(5) %>% mutate(종목명= cell_spec(종목명, "html", link = itemcode, color="#062872")) %>% select(종목명, 가격, 등락률)
+
+TIGER %>% kable(escape=FALSE) %>% kable_styling("striped", full_width = T, position = "center", font_size = 10)
+```
+
+### KB자산운용
+
+```{r}
+# KB
+KBSTAR <- etf_fin %>% filter(브랜드 == "KBSTAR") %>% arrange(등락률) %>% head(5) %>% mutate(종목명= cell_spec(종목명, "html", link = itemcode, color="#062872")) %>% select(종목명, 가격, 등락률)
+
+KBSTAR %>% kable(escape=FALSE) %>% kable_styling("striped", full_width = T, position = "center", font_size = 10)
+```
+### 한국투자신탁운용
+
+```{r}
+# 한투
+ACE <- etf_fin %>% filter(브랜드 == "ACE") %>% arrange(등락률) %>% head(5) %>% mutate(종목명= cell_spec(종목명, "html", link = itemcode, color="#062872")) %>% select(종목명, 가격, 등락률)
+
+ACE %>% kable(escape=FALSE) %>% kable_styling("striped", full_width = T, position = "center", font_size = 10)
+```
+
+Column {data-width=325}
+-----------------------------------------------------------------------
+### 한화자산운용
+
+```{r}
+# 한화
+ARIRANG <- etf_fin %>% filter(브랜드 == "ARIRANG") %>% arrange(등락률) %>% head(5) %>% mutate(종목명= cell_spec(종목명, "html", link = itemcode, color="#062872")) %>% select(종목명, 가격, 등락률)
+
+ARIRANG %>% kable(escape=FALSE) %>% kable_styling("striped", full_width = T, position = "center", font_size = 10)
+```
+
+### 키움투자자산운용
+
+```{r}
+# 키움 (히어로즈는 키움의 액티브 ETF 브랜드드)
+KOSEF <- etf_fin %>% filter(브랜드 == "KOSEF") %>% arrange(등락률) %>% head(5) %>% mutate(종목명= cell_spec(종목명, "html", link = itemcode, color="#062872")) %>% select(종목명, 가격, 등락률)
+
+KOSEF %>% kable(escape=FALSE) %>% kable_styling("striped", full_width = T, position = "center", font_size = 10)
+```
+
+### NH-Amundi자산운용
+
+```{r}
+# NH-Amundi
+HANARO <- etf_fin %>% filter(브랜드 == "HANARO") %>% arrange(등락률) %>% head(5) %>% mutate(종목명= cell_spec(종목명, "html", link = itemcode, color="#062872")) %>% select(종목명, 가격, 등락률)
+
+HANARO %>% kable(escape=FALSE) %>% kable_styling("striped", full_width = T, position = "center", font_size = 10)
+```
+### 신한자산운용
+
+```{r}
+# 신한
+SOL <- etf_fin %>% filter(브랜드 == "SOL") %>% arrange(등락률) %>% head(5) %>% mutate(종목명= cell_spec(종목명, "html", link = itemcode, color="#062872")) %>% select(종목명, 가격, 등락률)
+
+SOL %>% kable(escape=FALSE) %>% kable_styling("striped", full_width = T, position = "center", font_size = 10)
+```
